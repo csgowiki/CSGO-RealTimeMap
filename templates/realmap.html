@@ -7,8 +7,6 @@
       <link href="https://s2.pstatp.com/cdn/expire-1-M/twitter-bootstrap/4.3.1/css/bootstrap.min.css" type="text/css" rel="stylesheet" />
       <script src="https://s1.pstatp.com/cdn/expire-1-M/twitter-bootstrap/4.3.1/js/bootstrap.bundle.min.js" type="application/javascript"></script>
       <link href="https://s0.pstatp.com/cdn/expire-1-M/twitter-bootstrap/4.3.1/css/bootstrap-grid.min.css" type="text/css" rel="stylesheet" />
-      <!-- import vue -->
-      <script src="https://s2.pstatp.com/cdn/expire-1-M/vue/2.6.10/vue.min.js" type="application/javascript"></script>
       <!-- mobile device -->
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <script type = "text/javascript" 
@@ -18,11 +16,8 @@
    <body>
    <div class="container">
       <div class="row">
-         <div class="col-12">
+         <div id="canvas" class="col-12">
          <img id="map_name" style="position:relative" src="{{ url_for('static', filename = 'img/map/de_inferno.png') }}"/>
-         <svg id="svg" style="position:absolute;top:0px;left:15px;width:1029px;height:1029px;" xmlns="http://www.w3.org/2000/svg" version="1.1">
-            <circle id="test" cx="5" cy="5" r="5" stroke="black" fill="red" />
-         </svg>
       </div>
    </div>
    </body>
