@@ -1,6 +1,10 @@
 const MAXPLAYERS = 10;
 const UPDATE_INTERVAL = 1000; // ms
 
+function updateMap(mapname) {
+   $('#map_name').attr('src', `static/img/map/${mapname}.png`);
+}
+
 function initPlayers(maxplayers = MAXPLAYERS) {
    for (var player = 0; player < maxplayers; player++) {
       $("#canvas").append($(
@@ -32,19 +36,21 @@ function drawPlayer(data) {
 $(function(){
    $.ajax({
       async: false,
-      url: "/api/ajax_init",
+      url: "/web-api/init",
       type: "get",
       success(data) {
-         initPlayers(data.maxplayers)
+         updateMap(data.mapname);
+         initPlayers(data.maxplayers);
       }
    })
 
    window.setInterval(function() {
       $.ajax({
          async: false,
-         url: "/api/ajax_update",
+         url: "/web-api/update",
          type: "get",
          success(data) {
+            updateMap(data.mapname);
             drawPlayer(data);
          }
       })

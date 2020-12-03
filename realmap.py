@@ -25,10 +25,12 @@ class Converter_Real2Img():
 __CHARSPLIT = '|'
 __NAMESPLIT = '!@!'
 __MAXPLAYERS = 10
+DEFAULT_MAP = 'de_inferno'
 
 app = Flask(__name__)
-mp_converter = Converter_Real2Img('de_inferno')
+mp_converter = Converter_Real2Img(DEFAULT_MAP)
 infoContainer = {
+    'mapname': DEFAULT_MAP,
     'players': []
 }
 
@@ -36,17 +38,26 @@ infoContainer = {
 def mapview():
     return render_template("realmap.html")
 
-@app.route('/api/ajax_update', methods=["GET"])
+@app.route('/web-api/update', methods=["GET"])
 def ajaxview():
     global infoContainer
     return infoContainer
 
-@app.route('/api/ajax_init', methods=["GET"])
+@app.route('/web-api/init', methods=["GET"])
 def ajaxInitView():
-    global __MAXPLAYERS
-    return {"maxplayers" : __MAXPLAYERS }
+    global __MAXPLAYERS, DEFAULT_MAP
+    return {"maxplayers" : __MAXPLAYERS, "mapname": DEFAULT_MAP }
 
-@app.route('/api/server_update', methods=["POST", "GET"])
+@app.route('/server-api/map', methods=["POST", "GET"])
+def serverMapView():
+    if request.method == "POST":
+        global infoContainer, mp_converter
+        infoContainer['mapname'] = request.form.get('mapname', DEFAULT_MAP)
+        mp_converter.load_map(infoContainer['mapname'])
+        return {"status": "Ok"}
+    return {"status": "None", "message": "POST only"}
+
+@app.route('/server-api/player', methods=["POST", "GET"])
 def serverview():
     if request.method == "POST":
         '''
