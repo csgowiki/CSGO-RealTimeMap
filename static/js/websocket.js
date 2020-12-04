@@ -1,5 +1,5 @@
 const MAXPLAYERS = 10;
-const UPDATE_INTERVAL = 1000; // ms
+const UPDATE_INTERVAL = 100;
 
 function updateMap(mapname) {
    $('#map_name').attr('src', `static/img/map/${mapname}.png`);
@@ -16,14 +16,14 @@ function initPlayers(maxplayers = MAXPLAYERS) {
    }
 }
 
-function drawPlayer(data) {
+function drawPlayer(players) {
    for (var player = 0; player < MAXPLAYERS; player++) {
-      if (player < data.players.length) {
+      if (player < players.length) {
          $(`#playerpos${player}`).attr('visibility', 'visible');
-         $(`#playername${player}`).text(data.players[player].name);
-         $(`#playerXlink${player}`).attr('href', `https://steamcommunity.com/profiles/${data.players[player].steam3id}`)
+         $(`#playername${player}`).text(players[player].name);
+         $(`#playerXlink${player}`).attr('href', `https://steamcommunity.com/profiles/${players[player].steam3id}`)
          $(`#playerpos${player}`).animate(
-            { left: data.players[player].posX, top: data.players[player].posY }, 
+            { left: players[player].posX, top: players[player].posY }, 
             UPDATE_INTERVAL
          );
       }
@@ -33,26 +33,13 @@ function drawPlayer(data) {
    }
 }
 
-$(function(){
-   $.ajax({
-      async: false,
-      url: "/web-api/init",
-      type: "get",
-      success(data) {
-         updateMap(data.mapname);
-         initPlayers(data.maxplayers);
-      }
-   })
-
-   window.setInterval(function() {
-      $.ajax({
-         async: false,
-         url: "/web-api/update",
-         type: "get",
-         success(data) {
-            updateMap(data.mapname);
-            drawPlayer(data);
-         }
-      })
-   }, UPDATE_INTERVAL);
-})
+$(document).ready(function() {
+    // init
+    initPlayers();
+    // websocket
+    var socket = io.connect();
+    socket.on('server_response', function(msg) {
+        updateMap(msg.data.mapname);
+        drawPlayer(msg.data.players);
+    });
+});

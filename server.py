@@ -1,6 +1,9 @@
 import os
 import json
+from threading import Lock
+
 from flask import Flask, render_template, request
+from flask_socketio import SocketIO
 
 class Converter_Real2Img():
     def __init__(self, map_name: str):
@@ -28,6 +31,11 @@ __MAXPLAYERS = 10
 DEFAULT_MAP = 'de_inferno'
 
 app = Flask(__name__)
+socketio = SocketIO(app)
+
+_thread = None
+lock = Lock()
+
 mp_converter = Converter_Real2Img(DEFAULT_MAP)
 infoContainer = {
     'mapname': DEFAULT_MAP,
@@ -38,15 +46,18 @@ infoContainer = {
 def mapview():
     return render_template("realmap.html")
 
-@app.route('/web-api/update', methods=["GET"])
-def ajaxview():
+def background_task():
     global infoContainer
-    return infoContainer
+    while True:
+        socketio.emit("server_response", {"data": infoContainer})
+        socketio.sleep(0.1)
 
-@app.route('/web-api/init', methods=["GET"])
-def ajaxInitView():
-    global __MAXPLAYERS, DEFAULT_MAP
-    return {"maxplayers" : __MAXPLAYERS, "mapname": DEFAULT_MAP }
+@socketio.on("connect")
+def websocket_connect():
+    global _thread
+    with lock:
+        if _thread is None:
+            _thread = socketio.start_background_task(target=background_task)
 
 @app.route('/server-api/map', methods=["POST", "GET"])
 def serverMapView():
@@ -88,4 +99,4 @@ def serverview():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)

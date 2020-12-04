@@ -9,8 +9,11 @@
       <link href="https://s0.pstatp.com/cdn/expire-1-M/twitter-bootstrap/4.3.1/css/bootstrap-grid.min.css" type="text/css" rel="stylesheet" />
       <!-- mobile device -->
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <script type = "text/javascript" 
-         src = "{{ url_for('static', filename = '/js/realmap.js') }}" ></script>
+      <!--socket-->
+      <script type="text/javascript" src="//cdn.bootcss.com/socket.io/1.5.1/socket.io.min.js"></script>
+
+      <script type="text/javascript" charset="utf-8"
+         src="{{ url_for('static', filename='/js/websocket.js') }}"></script> 
    </head>
    
    <body>
