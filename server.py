@@ -1,34 +1,24 @@
-import os
-import json
-from threading import Lock
+from os import error
+from threading import Lock, Timer
 
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 
-class Converter_Real2Img():
-    def __init__(self, map_name: str):
-        self.load_map(map_name)
-
-    def load_map(self, map_name: str):
-        try:
-            map_info_path = os.path.join('static', 'json', 'map_info.json')
-            with open(map_info_path, 'r') as infile:
-                self.map_info = json.loads(infile.read())[map_name]
-        except:
-            raise Exception('map_info.json load FAILED!')
-    
-    def convert(self, realX: float, realY: float):
-        try:
-            imgX = '{}px'.format((realX - self.map_info['pos_x']) / self.map_info['scale'])
-            imgY = '{}px'.format((self.map_info['pos_y'] - realY) / self.map_info['scale'])
-            return imgX, imgY
-        except:
-            raise Exception('convert FAILED!')
+from utils import *
 
 __CHARSPLIT = '|'
 __NAMESPLIT = '!@!'
-__MAXPLAYERS = 10
 DEFAULT_MAP = 'de_inferno'
+__INTERVAL = 0.1 # s
+__MAXPLAYER = 10
+__UTCONFIG = {
+    'flashbang': [1, '50px'], # timelast, diameter
+    'hegrenade': [1, '50px'], 
+    'molotov': [7, '50px'],
+    'incgrenade': [7, '50px'],
+    'smokegrenade': [15, '60px'],
+    'decoy': [15, '30px']
+}
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -38,19 +28,20 @@ lock = Lock()
 
 mp_converter = Converter_Real2Img(DEFAULT_MAP)
 infoContainer = {
-    'mapname': DEFAULT_MAP,
-    'players': []
+    'mapname': DEFAULT_MAP,  # str
+    'players': [], # [{'posX', 'posY', 'name', 'steam3id'}]
+    'utilities': {} # {'utid': {'uttype', 'posX', 'posY'}}   type=[flashbang, hegrenade, molotov, smokegrenade]
 }
 
 @app.route('/')
 def mapview():
-    return render_template("realmap.html")
+    return render_template("index.html")
 
 def background_task():
-    global infoContainer
+    global infoContainer, __INTERVAL
     while True:
         socketio.emit("server_response", {"data": infoContainer})
-        socketio.sleep(0.1)
+        socketio.sleep(__INTERVAL)
 
 @socketio.on("connect")
 def websocket_connect():
@@ -58,6 +49,11 @@ def websocket_connect():
     with lock:
         if _thread is None:
             _thread = socketio.start_background_task(target=background_task)
+
+@app.route('/ajax-api/init', methods=['GET'])
+def ajaxInitView():
+    global __MAXPLAYER, __UTCONFIG, __INTERVAL
+    return {'MAXPLAYER': __MAXPLAYER, 'UTCONFIG': __UTCONFIG, "INTERVAL": __INTERVAL}
 
 @app.route('/server-api/map', methods=["POST", "GET"])
 def serverMapView():
@@ -69,7 +65,7 @@ def serverMapView():
     return {"status": "None", "message": "POST only"}
 
 @app.route('/server-api/player', methods=["POST", "GET"])
-def serverview():
+def serverPlayerView():
     if request.method == "POST":
         '''
         playerXs: xx|xx|xx
@@ -97,6 +93,28 @@ def serverview():
         return {"status": "Ok"}
     return {"status": "None", "message": "POST only"}
 
+@app.route('/server-api/utility', methods=['POST', 'GET'])
+def serverUtilityView():
+    if request.method == 'POST':
+        '''
+        utid, uttype, realX, realY
+        '''
+        global infoContainer
+        utid = int(request.form.get('utid', 0))
+        uttype = request.form.get('uttype', 'smokegrenade')
+        realX = float(request.form.get('realX', 0))
+        realY = float(request.form.get('realY', 0))
+        posX, posY = mp_converter.convert(realX, realY)
+        infoContainer['utilities'][utid] = {
+            'posX': posX, 'posY': posY, 'uttype': uttype
+        }
+        def utTimerCallBack(utid: int):
+            global infoContainer
+            infoContainer['utilities'].pop(utid)
+        utTimer = Timer(__UTCONFIG[uttype][0], utTimerCallBack, (utid,))
+        utTimer.start()
+        return {"status": "Ok"}
+    return {"status": "None", "message": "POST only"}
 
 if __name__ == '__main__':
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)
