@@ -109,7 +109,8 @@ def serverUtilityView():
             'posX': posX, 'posY': posY, 'uttype': uttype
         }
         def utTimerCallBack(utid: int):
-            infoContainer['utilities'].pop(utid)
+            global infoContainer
+            del infoContainer['utilities'][utid]
         utTimer = Timer(__UTCONFIG[uttype][0], utTimerCallBack, (utid,))
         utTimer.start()
         return {"status": "Ok"}
