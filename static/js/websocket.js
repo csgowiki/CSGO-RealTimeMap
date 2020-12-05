@@ -42,7 +42,7 @@ function drawUtility(utilities) {
       if ($(`#utpos${utid}`).length == 0) {
          $("#canvas").append($(
             `<img id='utpos${utid}' \ 
-               style='position:absolute;top:${value.posX};left:${value.posY};width:${_UTCONFIG[value.uttype][1]};height:${_UTCONFIG[value.uttype][1]}'  \
+               style='position:absolute;top:${value.posY};left:${value.posX};width:${_UTCONFIG[value.uttype][1]};height:${_UTCONFIG[value.uttype][1]}'  \
                src='static/img/weapon/${value.uttype}.png'> \
             </img>`
          ));
