@@ -1,5 +1,6 @@
 from os import error
 from threading import Lock, Timer
+import threading
 
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
@@ -110,7 +111,8 @@ def serverUtilityView():
         }
         def utTimerCallBack(utid: int):
             global infoContainer
-            del infoContainer['utilities'][utid]
+            try: del infoContainer['utilities'][utid]
+            except: pass
         utTimer = Timer(__UTCONFIG[uttype][0], utTimerCallBack, (utid,))
         utTimer.start()
         return {"status": "Ok"}
