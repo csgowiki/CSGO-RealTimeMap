@@ -99,17 +99,16 @@ def serverUtilityView():
         '''
         utid, uttype, realX, realY
         '''
-        global infoContainer
+        global infoContainer, __UTCONFIG
         utid = int(request.form.get('utid', 0))
         uttype = request.form.get('uttype', 'smokegrenade')
         realX = float(request.form.get('realX', 0))
-        realY = float(request.form.get('realY', 0))
+        realY = float(request.form.get('realY', 0)) - 144
         posX, posY = mp_converter.convert(realX, realY)
         infoContainer['utilities'][utid] = {
             'posX': posX, 'posY': posY, 'uttype': uttype
         }
         def utTimerCallBack(utid: int):
-            global infoContainer
             infoContainer['utilities'].pop(utid)
         utTimer = Timer(__UTCONFIG[uttype][0], utTimerCallBack, (utid,))
         utTimer.start()
