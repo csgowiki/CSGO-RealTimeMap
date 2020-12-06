@@ -67,7 +67,7 @@ public Action:Event_PlayerSay(Handle:event, const String:name[], bool:dontBroadc
     int client = GetClientOfUserId(GetEventInt(event, "userid"));
     GetEventString(event, "text", message, sizeof(message));
     GetClientName(client, name, sizeof(name));
-
+    msgSender(name, message);
 }
 
 void msgSender(char name[32], char message[48]) {
