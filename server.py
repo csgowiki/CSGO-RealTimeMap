@@ -43,7 +43,9 @@ def mapview():
 def background_task():
     global infoContainer, __INTERVAL, serverMsg
     while True:
-        newMsg = serverMsg.get()
+        newMsg = []
+        if not serverMsg.empty():
+            newMsg = serverMsg.get_nowait()
         socketio.emit("server_response", {"data": infoContainer, "newMsg": newMsg})
         socketio.sleep(__INTERVAL)
 

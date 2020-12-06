@@ -57,7 +57,8 @@ function drawUtility(utilities) {
 }
 
 function showMessage(newMsg) {
-   $.toaster(newMsg[0], newMsg[1]);
+   if (newMsg.length != 0)
+      $.toaster(newMsg[0], newMsg[1]);
 }
 
 $(document).ready(function() {
