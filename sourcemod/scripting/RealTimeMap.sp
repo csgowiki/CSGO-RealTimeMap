@@ -1,5 +1,6 @@
 #include <sourcemod>
 #include <system2>
+#include <json>
 
 #define CHARSPLIT "|"
 #define NAMESPLIT "!@!"
@@ -19,6 +20,7 @@ public OnPluginStart() {
     
     HookEvent("player_say", Event_PlayerSay);
     CreateTimer(0.1, InfoSender, _, TIMER_REPEAT);
+    CreateTimer(1.0, MsgGeter, _, TIMER_REPEAT);
 }
 
 public OnMapStart() {
@@ -62,20 +64,23 @@ public Action:Event_MolotovDetonate(Handle:event, const String:name[], bool:dont
 }
 
 public Action:Event_PlayerSay(Handle:event, const String:name[], bool:dontBroadcast) {
-    char name[32];
+    char name_[32];
     char message[48];
     int client = GetClientOfUserId(GetEventInt(event, "userid"));
     GetEventString(event, "text", message, sizeof(message));
-    GetClientName(client, name, sizeof(name));
-    msgSender(name, message);
+    GetClientName(client, name_, sizeof(name_));
+    msgSender(true, name_, message);
 }
 
-void msgSender(char name[32], char message[48]) {
+void msgSender(bool flag, char name[32], char message[48]) {
     System2HTTPRequest httpRequest = new System2HTTPRequest(
         msgSenderCallBack,
         "http://127.0.0.1:5000/server-api/msg"
     );
-    httpRequest.SetData("name=%s&msg=%s", name, message);
+    if (flag)
+        httpRequest.SetData("name=%s&msg=%s", name, message);
+    else
+        httpRequest.SetData("");
     httpRequest.POST();
 }
 
@@ -97,6 +102,10 @@ void MapInfoSender() {
     );
     httpRequest.SetData("mapname=%s", MapName);
     httpRequest.POST();
+}
+
+public Action:MsgGeter(Handle timer) {
+    msgSender(false, "", "");
 }
 
 public Action:InfoSender(Handle timer) {
@@ -149,6 +158,19 @@ public mapSenderCallBack(bool success, const char[] error, System2HTTPRequest re
 }
 
 public msgSenderCallBack(bool success, const char[] error, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method) {
+    if (success) {
+        char[] content = new char[response.ContentLength + 1];
+        char status[8];
+        char ip[18], msg[48];
+        response.GetContent(content, response.ContentLength + 1);
+        JSON_Object json_obj = json_decode(content);
+        json_obj.GetString("status", status, sizeof(status));
+        if (StrEqual(status, "Good")) {
+            json_obj.GetString("ip", ip, sizeof(ip));
+            json_obj.GetString("msg", msg, sizeof(msg));
+            PrintToChatAll("[\x02%s\x01]: %s", ip, msg);
+        }
+    }
 }
 
 stock bool IsPlayer(int client) {

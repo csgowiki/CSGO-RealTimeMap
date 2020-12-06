@@ -21,6 +21,7 @@ __UTCONFIG = {
     'smokegrenade': [15, '60px'],
     'decoy': [15, '30px']
 }
+__MSGQUEUESIZE = 3
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -35,10 +36,11 @@ infoContainer = {
     'utilities': {}, # {'utid': {'uttype', 'posX', 'posY'}}   type=[flashbang, hegrenade, molotov, smokegrenade]
 }
 serverMsg = Queue()
+webMsg = Queue()
 
 @app.route('/')
-def mapview():
-    return render_template("index.html")
+def indexView():
+    return render_template("index.html", localIP=request.remote_addr)
 
 def background_task():
     global infoContainer, __INTERVAL, serverMsg
@@ -60,6 +62,20 @@ def websocket_connect():
 def ajaxInitView():
     global __MAXPLAYER, __UTCONFIG, __INTERVAL
     return {'MAXPLAYER': __MAXPLAYER, 'UTCONFIG': __UTCONFIG, "INTERVAL": __INTERVAL}
+
+@app.route('/ajax-api/webmsg', methods=['GET', 'POST'])
+def ajaxWebMsgView():
+    if request.method == "POST":
+        global serverMsg, webMsg, __MSGQUEUESIZE
+        msg = request.form.get("msg", None)
+        if msg is not None:
+            serverMsg.put([request.remote_addr, msg])
+            if webMsg.qsize() >= __MSGQUEUESIZE:
+                webMsg = Queue()
+            else:
+                webMsg.put([request.remote_addr, msg])
+        return {"status": "Ok"}
+    return {"status": "None", "message": "POST only"}
 
 @app.route('/server-api/map', methods=["POST", "GET"])
 def serverMapView():
@@ -133,14 +149,17 @@ def msgView():
         name, msg
         '''
         try:
-            global serverMsg, __NAMESPLIT
+            global serverMsg, webMsg
             name = request.form.get("name", None)
             msg = request.form.get("msg", None)
             if name != None and msg != None:
                 serverMsg.put([name, msg])
-            return {"status": 0} # WIP
+            if name == None and msg == None and not webMsg.empty():
+                newMsg = webMsg.get_nowait()
+                return {"status": "Good", "ip": newMsg[0], "msg": newMsg[1]}
+            return {"status": "Ok"} # WIP
         except:
-            return {"status": "error"}
+            return {"status": "Error"}
 
     return {"status": "None", "message": "POST only"}
 

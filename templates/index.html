@@ -15,15 +15,30 @@
       <script type="text/javascript" src="{{ url_for('static', filename='js/toaster.js') }}"></script>
       <script type="text/javascript" charset="utf-8"
          src="{{ url_for('static', filename='/js/websocket.js') }}"></script> 
+      <script type="text/javascript" charset="utf-8"
+         src="{{ url_for('static', filename='/js/msgsender.js') }}"></script> 
    </head>
    
    <body>
    <div class="container">
       <div class="row">
-         <div id="canvas" class="col-12">
+         <div id="canvas" class="col-md-12">
             <img id="map_name" style="position:relative" src="{{ url_for('static', filename = 'img/map/de_inferno.png') }}"/>
+            <div class="input-group" style="width:1024px"><br>
+               <div class="input-group-prepend">
+                  <span class="input-group-text" id="basic-addon1">{{ localIP }}</span>
+               </div>
+               <input id="msg_input" type="text" class="form-control" placeholder="聊天框" aria-label="text" aria-describedby="basic-addon1" value="">
+               <span class="input-group-btn">
+                  <button id='msg_btn' class="btn btn-danger" type="button">发送</button>
+               </span>
+            </div>
          </div>
+         
+
       </div>
+
+   
    </div>
    </body>
    
