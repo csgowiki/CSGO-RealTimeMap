@@ -58,7 +58,6 @@ function drawUtility(utilities) {
 
 function showMessage(newMsg) {
    if (newMsg.length != 0) {
-      console.log(newMsg);
       $.toaster(newMsg[1], newMsg[0]);
    }
 }
