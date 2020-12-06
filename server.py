@@ -1,6 +1,5 @@
-from os import error
 from threading import Lock, Timer
-import threading
+import gc
 
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
@@ -75,23 +74,26 @@ def serverPlayerView():
         names: xx !@! xx !@! xx
         '''
         global infoContainer, __CHARSPLIT, __NAMESPLIT
-        playerXs = request.form.get('playerXs', []).split(__CHARSPLIT)
-        playerYs = request.form.get('playerYs', []).split(__CHARSPLIT)
-        steam3ids = request.form.get('steam3ids', []).split(__CHARSPLIT)
-        names = request.form.get('names', []).split(__NAMESPLIT)
-        # check valid
-        if len(playerXs) != len(names):
-            return {"status": "error", "message": "player's name INVALID"}
+        try:
+            playerXs = request.form.get('playerXs', []).split(__CHARSPLIT)
+            playerYs = request.form.get('playerYs', []).split(__CHARSPLIT)
+            steam3ids = request.form.get('steam3ids', []).split(__CHARSPLIT)
+            names = request.form.get('names', []).split(__NAMESPLIT)
+            # check valid
+            if len(playerXs) != len(names):
+                return {"status": "error", "message": "player's name INVALID"}
 
-        playerCount = len(playerXs)
-        infoContainer["players"].clear()
-        for player in range(playerCount):
-            px, py = mp_converter.convert(float(playerXs[player]), float(playerYs[player]))
-            infoContainer["players"].append({
-                "posX": px, "posY": py,
-                "steam3id": steam3ids[player], "name": names[player]
-            })
-        return {"status": "Ok"}
+            playerCount = len(playerXs)
+            infoContainer["players"].clear()
+            for player in range(playerCount):
+                px, py = mp_converter.convert(float(playerXs[player]), float(playerYs[player]))
+                infoContainer["players"].append({
+                    "posX": px, "posY": py,
+                    "steam3id": steam3ids[player], "name": names[player]
+                })
+            return {"status": "Ok"}
+        except:
+            return {"status": "Error"}
     return {"status": "None", "message": "POST only"}
 
 @app.route('/server-api/utility', methods=['POST', 'GET'])
@@ -113,10 +115,11 @@ def serverUtilityView():
             global infoContainer
             try: del infoContainer['utilities'][utid]
             except: pass
+            gc.collect()
         utTimer = Timer(__UTCONFIG[uttype][0], utTimerCallBack, (utid,))
         utTimer.start()
         return {"status": "Ok"}
     return {"status": "None", "message": "POST only"}
 
 if __name__ == '__main__':
-    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+    socketio.run(app, host="0.0.0.0", port=5000, debug=False)
