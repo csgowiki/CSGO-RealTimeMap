@@ -57,8 +57,10 @@ function drawUtility(utilities) {
 }
 
 function showMessage(newMsg) {
-   if (newMsg.length != 0)
-      $.toaster(newMsg[0], newMsg[1]);
+   if (newMsg.length != 0) {
+      console.log(newMsg);
+      $.toaster(newMsg[1], newMsg[2]);
+   }
 }
 
 $(document).ready(function() {
