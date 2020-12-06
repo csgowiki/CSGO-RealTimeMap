@@ -56,6 +56,10 @@ function drawUtility(utilities) {
    })
 }
 
+function showMessage(newMsg) {
+   $.toaster(newMsg[0], newMsg[1]);
+}
+
 $(document).ready(function() {
     // init
     $.ajax({
@@ -73,5 +77,6 @@ $(document).ready(function() {
         updateMap(msg.data.mapname);
         drawPlayer(msg.data.players);
         drawUtility(msg.data.utilities);
+        showMessage(msg.newMsg);
     });
 });

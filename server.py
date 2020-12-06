@@ -1,11 +1,13 @@
 from threading import Lock, Timer
 import gc
+from queue import Queue
 
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 
 from utils import *
 
+# CONFIG
 __CHARSPLIT = '|'
 __NAMESPLIT = '!@!'
 DEFAULT_MAP = 'de_inferno'
@@ -30,17 +32,19 @@ mp_converter = Converter_Real2Img(DEFAULT_MAP)
 infoContainer = {
     'mapname': DEFAULT_MAP,  # str
     'players': [], # [{'posX', 'posY', 'name', 'steam3id'}]
-    'utilities': {} # {'utid': {'uttype', 'posX', 'posY'}}   type=[flashbang, hegrenade, molotov, smokegrenade]
+    'utilities': {}, # {'utid': {'uttype', 'posX', 'posY'}}   type=[flashbang, hegrenade, molotov, smokegrenade]
 }
+serverMsg = Queue()
 
 @app.route('/')
 def mapview():
     return render_template("index.html")
 
 def background_task():
-    global infoContainer, __INTERVAL
+    global infoContainer, __INTERVAL, serverMsg
     while True:
-        socketio.emit("server_response", {"data": infoContainer})
+        newMsg = serverMsg.get()
+        socketio.emit("server_response", {"data": infoContainer, "newMsg": newMsg})
         socketio.sleep(__INTERVAL)
 
 @socketio.on("connect")
@@ -115,11 +119,31 @@ def serverUtilityView():
             global infoContainer
             try: del infoContainer['utilities'][utid]
             except: pass
-            gc.collect()
         utTimer = Timer(__UTCONFIG[uttype][0], utTimerCallBack, (utid,))
         utTimer.start()
         return {"status": "Ok"}
     return {"status": "None", "message": "POST only"}
 
+@app.route('/server-api/msg', methods=['POST', 'GET'])
+def msgView():
+    if request.method == 'POST':
+        '''
+        name, msg
+        '''
+        try:
+            global serverMsg, __NAMESPLIT
+            name = request.form.get("name", None)
+            msg = request.form.get("msg", None)
+            if name != None and msg != None:
+                serverMsg.put([name, msg])
+            return {"status": 0} # WIP
+        except:
+            return {"status": "error"}
+
+    return {"status": "None", "message": "POST only"}
+
 if __name__ == '__main__':
+    def memreset(): gc.collect()
+    gcTimer = Timer(60.0, memreset)
+    gcTimer.start()
     socketio.run(app, host="0.0.0.0", port=5000, debug=False)

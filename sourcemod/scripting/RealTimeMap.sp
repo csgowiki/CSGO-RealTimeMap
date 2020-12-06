@@ -16,7 +16,8 @@ public OnPluginStart() {
     HookEvent("flashbang_detonate", Event_FlashbangDetonate);
     HookEvent("smokegrenade_detonate", Event_SmokeDetonate);
     HookEvent("inferno_startburn", Event_MolotovDetonate);
-
+    
+    HookEvent("player_say", Event_PlayerSay);
     CreateTimer(0.1, InfoSender, _, TIMER_REPEAT);
 }
 
@@ -58,6 +59,24 @@ public Action:Event_MolotovDetonate(Handle:event, const String:name[], bool:dont
     float realY = GetEventFloat(event, "y");
     char uttype[16] = "molotov";
     UtilitySender(utid, realX, realY, uttype);
+}
+
+public Action:Event_PlayerSay(Handle:event, const String:name[], bool:dontBroadcast) {
+    char name[32];
+    char message[48];
+    int client = GetClientOfUserId(GetEventInt(event, "userid"));
+    GetEventString(event, "text", message, sizeof(message));
+    GetClientName(client, name, sizeof(name));
+
+}
+
+void msgSender(char name[32], char message[48]) {
+    System2HTTPRequest httpRequest = new System2HTTPRequest(
+        msgSenderCallBack,
+        "http://127.0.0.1:5000/server-api/msg"
+    );
+    httpRequest.SetData("name=%s&msg=%s", name, message);
+    httpRequest.POST();
 }
 
 void UtilitySender(int utid, float realX, float realY, char uttype[16]) {
@@ -127,6 +146,9 @@ public senderCallBack(bool success, const char[] error, System2HTTPRequest reque
 }
 
 public mapSenderCallBack(bool success, const char[] error, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method) {
+}
+
+public msgSenderCallBack(bool success, const char[] error, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method) {
 }
 
 stock bool IsPlayer(int client) {
