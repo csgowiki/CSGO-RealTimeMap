@@ -122,6 +122,7 @@ public Action:InfoSender(Handle timer) {
     char playerYs[96];
     char steam3ids[150];
     char names[150];
+    char ids[20];
     int playerCount = 0;
     for (int client = 0; client <= MAXPLAYERS; client ++) {
         if (IsPlayer(client)) {
@@ -130,21 +131,25 @@ public Action:InfoSender(Handle timer) {
             float OriginPosition[3];
             char steam3id[16];
             char name[32];
+            char id[2];
             GetClientAbsOrigin(client, OriginPosition);
             GetClientAuthId(client, AuthId_Steam3, steam3id, sizeof(steam3id));
             GetClientName(client, name, sizeof(name));
             FloatToString(OriginPosition[0], playerX, sizeof(playerX));
             FloatToString(OriginPosition[1], playerY, sizeof(playerY));
+            IntToString(client, id, sizeof(id));
             if (playerCount != 0) {
                 StrCat(playerXs, sizeof(playerXs), CHARSPLIT);
                 StrCat(playerYs, sizeof(playerYs), CHARSPLIT);
                 StrCat(steam3ids, sizeof(steam3ids), CHARSPLIT);
                 StrCat(names, sizeof(names), NAMESPLIT);
+                StrCat(ids, sizeof(ids), NAMESPLIT);
             }
             StrCat(playerXs, sizeof(playerXs), playerX);
             StrCat(playerYs, sizeof(playerYs), playerY);
             StrCat(steam3ids, sizeof(steam3ids), steam3id);
             StrCat(names, sizeof(names), name);
+            StrCat(ids, sizeof(ids), id);
             playerCount++;
         }
     }
@@ -152,8 +157,8 @@ public Action:InfoSender(Handle timer) {
         senderCallBack,
         "http://127.0.0.1:5000/server-api/player"
     );
-    httpRequest.SetData("playerXs=%s&playerYs=%s&steam3ids=%s&names=%s", 
-        playerXs, playerYs, steam3ids, names);
+    httpRequest.SetData("playerXs=%s&playerYs=%s&steam3ids=%s&names=%s&ids=%s", 
+        playerXs, playerYs, steam3ids, names, ids);
     httpRequest.POST();
 }
 

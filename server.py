@@ -32,7 +32,7 @@ lock = Lock()
 mp_converter = Converter_Real2Img(DEFAULT_MAP)
 infoContainer = {
     'mapname': DEFAULT_MAP,  # str
-    'players': [], # [{'posX', 'posY', 'name', 'steam3id'}]
+    'players': Queue(), # ['posX', 'posY', 'name', 'steam3id', 'id']
     'utilities': {}, # {'utid': {'uttype', 'posX', 'posY'}}   type=[flashbang, hegrenade, molotov, smokegrenade]
 }
 serverMsg = Queue()
@@ -46,9 +46,17 @@ def background_task():
     global infoContainer, __INTERVAL, serverMsg
     while True:
         newMsg = []
+        playerMove = []
         if not serverMsg.empty():
             newMsg = serverMsg.get_nowait()
-        socketio.emit("server_response", {"data": infoContainer, "newMsg": newMsg})
+        if not infoContainer["players"].empty():
+            playerMove = infoContainer["players"].get_nowait()
+        socketio.emit("server_response", {
+            "mapname": infoContainer["mapname"], 
+            "playerMove": playerMove,
+            "utilities": infoContainer["utilities"],
+            "newMsg": newMsg
+        })
         socketio.sleep(__INTERVAL)
 
 @socketio.on("connect")
@@ -94,6 +102,7 @@ def serverPlayerView():
         playerYs: xx|xx|xx
         steam3ids: xx|xx|xx
         names: xx !@! xx !@! xx
+        ids: xx|xx|xx
         '''
         global infoContainer, __CHARSPLIT, __NAMESPLIT
         try:
@@ -101,18 +110,15 @@ def serverPlayerView():
             playerYs = request.form.get('playerYs', []).split(__CHARSPLIT)
             steam3ids = request.form.get('steam3ids', []).split(__CHARSPLIT)
             names = request.form.get('names', []).split(__NAMESPLIT)
+            ids = request.form.get('ids', []).split(__CHARSPLIT)
             # check valid
             if len(playerXs) != len(names):
                 return {"status": "error", "message": "player's name INVALID"}
 
             playerCount = len(playerXs)
-            infoContainer["players"].clear()
             for player in range(playerCount):
                 px, py = mp_converter.convert(float(playerXs[player]), float(playerYs[player]))
-                infoContainer["players"].append({
-                    "posX": px, "posY": py,
-                    "steam3id": steam3ids[player], "name": names[player]
-                })
+                infoContainer["players"].put([px, py, steam3ids[player], names[player], ids[player]])
             return {"status": "Ok"}
         except:
             return {"status": "Error"}
