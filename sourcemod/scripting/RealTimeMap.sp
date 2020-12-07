@@ -182,7 +182,7 @@ public msgSenderCallBack(bool success, const char[] error, System2HTTPRequest re
         if (StrEqual(status, "Good")) {
             json_obj.GetString("ip", ip, sizeof(ip));
             json_obj.GetString("msg", msg, sizeof(msg));
-            PrintToChatAll("<ip:\x03%s\x01> %s", ip, msg);
+            PrintToChatAll("<\x05ip\x01:\x03%s\x01> \x0B%s\x01", ip, msg);
         }
     }
 }
