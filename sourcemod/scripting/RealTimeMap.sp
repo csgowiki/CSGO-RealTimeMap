@@ -17,6 +17,7 @@ public OnPluginStart() {
     HookEvent("flashbang_detonate", Event_FlashbangDetonate);
     HookEvent("smokegrenade_detonate", Event_SmokeDetonate);
     HookEvent("inferno_startburn", Event_MolotovDetonate);
+    HookEvent("decoy_detonate", Event_DecoyDetonate);
     
     HookEvent("player_say", Event_PlayerSay);
     CreateTimer(0.1, InfoSender, _, TIMER_REPEAT);
@@ -60,6 +61,14 @@ public Action:Event_MolotovDetonate(Handle:event, const String:name[], bool:dont
     float realX = GetEventFloat(event, "x");
     float realY = GetEventFloat(event, "y");
     char uttype[16] = "molotov";
+    UtilitySender(utid, realX, realY, uttype);
+}
+
+public Action:Event_DecoyDetonate(Handle:event, const String:name[], bool:dontBroadcast) {
+    int utid = GetEventInt(event, "entityid");
+    float realX = GetEventFloat(event, "x");
+    float realY = GetEventFloat(event, "y");
+    char uttype[16] = "decoy";
     UtilitySender(utid, realX, realY, uttype);
 }
 
@@ -168,7 +177,7 @@ public msgSenderCallBack(bool success, const char[] error, System2HTTPRequest re
         if (StrEqual(status, "Good")) {
             json_obj.GetString("ip", ip, sizeof(ip));
             json_obj.GetString("msg", msg, sizeof(msg));
-            PrintToChatAll("[\x02%s\x01]: %s", ip, msg);
+            PrintToChatAll("<ip:\x03%s\x01> %s", ip, msg);
         }
     }
 }
