@@ -1,4 +1,4 @@
-_INTERVAL = 100; // ms
+_INTERVAL = 500; // ms
 _UTCONFIG = {};
 _MAXPLAYER = 10;
 _PlayerCache = {};
@@ -52,6 +52,7 @@ function processQUtility(msg_qUtility) {
 
 function processQ2WebMsg(msg_q2WebMsg) {
    $.toaster(msg_q2WebMsg[1], msg_q2WebMsg[0]);
+   console.log(`${msg_q2WebMsg[0]}: ${msg_q2WebMsg[1]}`);
 }
 
 $(document).ready(function() {
