@@ -1,12 +1,22 @@
 _INTERVAL = 100;
 _UTCONFIG = {};
 _MAXPLAYER = 10;
+_PlayerCache = {};
 
 function updateMap(mapname) {
    $('#map_name').attr('src', `static/img/map/${mapname}.png`);
 }
 
 function drawPlayerMove(playerMove) {
+   //check
+   for (var eachPlayer in _PlayerCache) {
+      var now = new Date().getTime();
+      if (now - _PlayerCache[eachPlayer] >= _MAXPLAYER * _INTERVAL) {
+         $(`#playerMove${eachPlayer}`).remove();
+         delete _PlayerCache[eachPlayer]
+      }
+   }
+
    if (playerMove.length == 0) return;
    if ($(`#playerMove${playerMove[4]}`).length == 0) {
       $("#canvas").append($(
@@ -21,10 +31,8 @@ function drawPlayerMove(playerMove) {
          {left: playerMove[0], top: playerMove[1]},
          _INTERVAL
       );
-      setTimeout(function() {
-         $(`#playerMove${playerMove[4]}`).remove();
-      }, _INTERVAL);
    }
+   _PlayerCache[playerMove[4]] = new Date().getTime()
 }
 
 function drawUtility(utilities) {
