@@ -12,7 +12,7 @@ __CHARSPLIT = '|'
 __NAMESPLIT = '!@!'
 DEFAULT_MAP = 'de_inferno'
 SUPPORT_MAPS = ["de_inferno", "de_cache", "de_dust2", "de_mirage", "de_nuke", "de_overpass", "de_train", "de_vertigo"]
-__INTERVAL = 0.1 # s
+__INTERVAL = 0.05 # s
 __MAXPLAYER = 10
 __UTCONFIG = {
     'flashbang': [1000, '50px'], # timelast(ms), diameter
