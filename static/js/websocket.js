@@ -30,7 +30,7 @@ function processQPlayerMove(msg_qPlayerMove) {
    else {  // update
       $(`#playerMove${msg_qPlayerMove[4]}`).animate(
          {left: msg_qPlayerMove[0], top: msg_qPlayerMove[1]},
-         _INTERVAL
+         "fast"
       );
    }
    _PlayerCache[msg_qPlayerMove[4]] = new Date().getTime()
