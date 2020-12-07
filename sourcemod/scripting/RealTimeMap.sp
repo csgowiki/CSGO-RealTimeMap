@@ -20,7 +20,7 @@ public OnPluginStart() {
     HookEvent("decoy_started", Event_DecoyDetonate);
     
     HookEvent("player_say", Event_PlayerSay);
-    CreateTimer(0.1, InfoSender, _, TIMER_REPEAT);
+    CreateTimer(0.2, InfoSender, _, TIMER_REPEAT);
     CreateTimer(1.0, MsgGeter, _, TIMER_REPEAT);
 }
 
@@ -114,6 +114,7 @@ void MapInfoSender() {
 }
 
 public Action:MsgGeter(Handle timer) {
+    MapInfoSender();
     msgSender(false, "", "");
 }
 

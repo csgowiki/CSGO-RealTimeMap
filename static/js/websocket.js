@@ -1,7 +1,8 @@
-_INTERVAL = 100; // ms
+_INTERVAL = 200; // ms
 _UTCONFIG = {};
 _MAXPLAYER = 10;
 _PlayerCache = {};
+_CURRENTMAP = "";
 
 function checkPlayerCache() {
    for (var eachPlayer in _PlayerCache) {
