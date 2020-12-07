@@ -11,17 +11,17 @@ from utils import *
 __CHARSPLIT = '|'
 __NAMESPLIT = '!@!'
 DEFAULT_MAP = 'de_inferno'
+SUPPORT_MAPS = ["de_inferno", "de_cache", "de_dust2", "de_mirage", "de_nuke", "de_overpass", "de_train", "de_vertigo"]
 __INTERVAL = 0.1 # s
 __MAXPLAYER = 10
 __UTCONFIG = {
-    'flashbang': [1, '50px'], # timelast, diameter
-    'hegrenade': [1, '50px'], 
-    'molotov': [7, '50px'],
-    'incgrenade': [7, '50px'],
-    'smokegrenade': [15, '60px'],
-    'decoy': [15, '30px']
+    'flashbang': [1000, '50px'], # timelast(ms), diameter
+    'hegrenade': [1000, '50px'], 
+    'molotov': [7000, '50px'],
+    'incgrenade': [7000, '50px'],
+    'smokegrenade': [15000, '60px'],
+    'decoy': [15000, '30px']
 }
-__MSGQUEUESIZE = 3
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -30,33 +30,16 @@ _thread = None
 lock = Lock()
 
 mp_converter = Converter_Real2Img(DEFAULT_MAP)
-infoContainer = {
-    'mapname': DEFAULT_MAP,  # str
-    'players': Queue(), # ['posX', 'posY', 'name', 'steam3id', 'id']
-    'utilities': {}, # {'utid': {'uttype', 'posX', 'posY'}}   type=[flashbang, hegrenade, molotov, smokegrenade]
-}
-serverMsg = Queue()
-webMsg = Queue()
+messageQueue = MessageQueue()
 
 @app.route('/')
 def indexView():
     return render_template("index.html", localIP=request.remote_addr)
 
 def background_task():
-    global infoContainer, __INTERVAL, serverMsg
+    global __INTERVAL, messageQueue
     while True:
-        newMsg = []
-        playerMove = []
-        if not serverMsg.empty():
-            newMsg = serverMsg.get_nowait()
-        if not infoContainer["players"].empty():
-            playerMove = infoContainer["players"].get_nowait()
-        socketio.emit("server_response", {
-            "mapname": infoContainer["mapname"], 
-            "playerMove": playerMove,
-            "utilities": infoContainer["utilities"],
-            "newMsg": newMsg
-        })
+        socketio.emit("server_response", messageQueue.qGetAllMsg_noWait(qExcept=["q2ServerMsg"]))
         socketio.sleep(__INTERVAL)
 
 @socketio.on("connect")
@@ -74,23 +57,23 @@ def ajaxInitView():
 @app.route('/ajax-api/webmsg', methods=['GET', 'POST'])
 def ajaxWebMsgView():
     if request.method == "POST":
-        global serverMsg, webMsg, __MSGQUEUESIZE
+        global messageQueue
         msg = request.form.get("msg", None)
         if msg is not None:
-            serverMsg.put([request.remote_addr, msg])
-            if webMsg.qsize() >= __MSGQUEUESIZE:
-                webMsg = Queue()
-            else:
-                webMsg.put([request.remote_addr, msg])
+            messageQueue.qPut("q2WebMsg", [request.remote_addr, msg])
+            messageQueue.qPut("q2ServerMsg", [request.remote_addr, msg])
         return {"status": "Ok"}
     return {"status": "None", "message": "POST only"}
 
 @app.route('/server-api/map', methods=["POST", "GET"])
 def serverMapView():
     if request.method == "POST":
-        global infoContainer, mp_converter
-        infoContainer['mapname'] = request.form.get('mapname', DEFAULT_MAP)
-        mp_converter.load_map(infoContainer['mapname'])
+        global messageQueue, mp_converter
+        rq_map = request.form.get("mapname", DEFAULT_MAP)
+        if rq_map not in SUPPORT_MAPS: 
+            return {"status": "Error", "message": "map({}) do not support".format(rq_map)}
+        messageQueue.qPut("qMap", [rq_map])
+        mp_converter.load_map(rq_map)
         return {"status": "Ok"}
     return {"status": "None", "message": "POST only"}
 
@@ -104,7 +87,7 @@ def serverPlayerView():
         names: xx !@! xx !@! xx
         ids: xx|xx|xx
         '''
-        global infoContainer, __CHARSPLIT, __NAMESPLIT
+        global messageQueue
         try:
             playerXs = request.form.get('playerXs', []).split(__CHARSPLIT)
             playerYs = request.form.get('playerYs', []).split(__CHARSPLIT)
@@ -118,7 +101,7 @@ def serverPlayerView():
             playerCount = len(playerXs)
             for player in range(playerCount):
                 px, py = mp_converter.convert(float(playerXs[player]), float(playerYs[player]))
-                infoContainer["players"].put([px, py, steam3ids[player], names[player], ids[player]])
+                messageQueue.qPut("qPlayerMove", [px, py, steam3ids[player], names[player], ids[player]])
             return {"status": "Ok"}
         except:
             return {"status": "Error"}
@@ -130,21 +113,14 @@ def serverUtilityView():
         '''
         utid, uttype, realX, realY
         '''
-        global infoContainer, __UTCONFIG
+        global messageQueue
         utid = int(request.form.get('utid', 0))
         uttype = request.form.get('uttype', 'smokegrenade')
         realX = float(request.form.get('realX', 0)) - 80
         realY = float(request.form.get('realY', 0)) + 144
         posX, posY = mp_converter.convert(realX, realY)
-        infoContainer['utilities'][utid] = {
-            'posX': posX, 'posY': posY, 'uttype': uttype
-        }
-        def utTimerCallBack(utid: int):
-            global infoContainer
-            try: del infoContainer['utilities'][utid]
-            except: pass
-        utTimer = Timer(__UTCONFIG[uttype][0], utTimerCallBack, (utid,))
-        utTimer.start()
+
+        messageQueue.qPut("qUtility", [utid, uttype, posX, posY])
         return {"status": "Ok"}
     return {"status": "None", "message": "POST only"}
 
@@ -155,15 +131,16 @@ def msgView():
         name, msg
         '''
         try:
-            global serverMsg, webMsg
+            global messageQueue
             name = request.form.get("name", None)
             msg = request.form.get("msg", None)
-            if name != None and msg != None:
-                serverMsg.put([name, msg])
-            if name == None and msg == None and not webMsg.empty():
-                newMsg = webMsg.get_nowait()
+            if name is not None and msg is not None:
+                messageQueue.qPut("q2WebMsg", [name, msg])
+            
+            success, newMsg = messageQueue.qGet_noWait("q2ServerMsg")
+            if success: 
                 return {"status": "Good", "ip": newMsg[0], "msg": newMsg[1]}
-            return {"status": "Ok"} # WIP
+            return {"status": "Ok"}
         except:
             return {"status": "Error"}
 

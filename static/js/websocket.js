@@ -1,14 +1,9 @@
-_INTERVAL = 100;
+_INTERVAL = 100; // ms
 _UTCONFIG = {};
 _MAXPLAYER = 10;
 _PlayerCache = {};
 
-function updateMap(mapname) {
-   $('#map_name').attr('src', `static/img/map/${mapname}.png`);
-}
-
-function drawPlayerMove(playerMove) {
-   //check
+function checkPlayerCache() {
    for (var eachPlayer in _PlayerCache) {
       var now = new Date().getTime();
       if (now - _PlayerCache[eachPlayer] >= _MAXPLAYER * _INTERVAL) {
@@ -16,51 +11,47 @@ function drawPlayerMove(playerMove) {
          delete _PlayerCache[eachPlayer]
       }
    }
+}
 
-   if (playerMove.length == 0) return;
-   if ($(`#playerMove${playerMove[4]}`).length == 0) {
+function processQMap(msg_qMap) {
+   $('#map_name').attr('src', `static/img/map/${msg_qMap[0]}.png`);
+}
+
+function processQPlayerMove(msg_qPlayerMove) {
+   if ($(`#playerMove${msg_qPlayerMove[4]}`).length == 0) { // create
       $("#canvas").append($(
-         `<svg id='playerMove${playerMove[4]}' style='position:absolute;top:${playerMove[1]};left:${playerMove[0]};width:100px;height:20px;' xmlns='http://www.w3.org/2000/svg' version='1.1'> \
+         `<svg id='playerMove${msg_qPlayerMove[4]}' style='position:absolute;top:${msg_qPlayerMove[1]};left:${msg_qPlayerMove[0]};width:100px;height:20px;' xmlns='http://www.w3.org/2000/svg' version='1.1'> \
             <circle cx='15' cy='5' r='5' stroke='black' fill='red' /> \
-            <a id='playerXlink${playerMove[4]}' href='${playerMove[2]}'><text id='playername${playerMove[4]}' x='0' y='20' fill='yellow'>${playerMove[3]}</text></a> \
+            <a id='playerXlink${msg_qPlayerMove[4]}' href='${msg_qPlayerMove[2]}'><text id='playername${msg_qPlayerMove[4]}' x='0' y='20' fill='yellow'>${msg_qPlayerMove[3]}</text></a> \
          </svg>`
       ))
    }
-   else {
-      $(`#playerMove${playerMove[4]}`).animate(
-         {left: playerMove[0], top: playerMove[1]},
+   else {  // update
+      $(`#playerMove${msg_qPlayerMove[4]}`).animate(
+         {left: msg_qPlayerMove[0], top: msg_qPlayerMove[1]},
          _INTERVAL
       );
    }
-   _PlayerCache[playerMove[4]] = new Date().getTime()
+   _PlayerCache[msg_qPlayerMove[4]] = new Date().getTime()
 }
 
-function drawUtility(utilities) {
-   var nowarray = []
-   $.each(utilities, function(utid, value){
-      nowarray.push(`utpos${utid}`);
-      if (value.uttype == "incgrenade") value.uttype = "molotov";
-      if ($(`#utpos${utid}`).length == 0) {
-         $("#canvas").append($(
-            `<img id='utpos${utid}' \ 
-               style='position:absolute;top:${value.posY};left:${value.posX};width:${_UTCONFIG[value.uttype][1]};height:${_UTCONFIG[value.uttype][1]}'  \
-               src='static/img/weapon/${value.uttype}.png'> \
-            </img>`
-         ));
-      }
-   });
-   // delete
-   $("#canvas").find("img").each(function() {
-      if (this.id != "map_name" && nowarray.indexOf(this.id) == -1) {
-         $(`#${this.id}`).remove();
-      }
-   })
-}
-
-function showMessage(newMsg) {
-   if (newMsg.length != 0) {
-      $.toaster(newMsg[1], newMsg[0]);
+function processQUtility(msg_qUtility) {
+   if ($(`#utpos${msg_qUtility[0]}`).length == 0) {
+      $("#canvas").append($(
+         `<img id='utpos${msg_qUtility[0]}' \ 
+            style='position:absolute;top:${msg_qUtility[3]};left:${msg_qUtility[2]};width:${_UTCONFIG[msg_qUtility[1]][1]};height:${_UTCONFIG[msg_qUtility[1]][1]}'  \
+            src='static/img/weapon/${msg_qUtility[1]}.png'> \
+         </img>`
+      ));
    }
+   // countdown
+   setTimeout(function() {
+      $(`#utpos${msg_qUtility[0]}`).remove();
+   }, _UTCONFIG[msg_qUtility[1]][0]);
+}
+
+function processQ2WebMsg(msg_q2WebMsg) {
+   $.toaster(msg_q2WebMsg[1], msg_q2WebMsg[0]);
 }
 
 $(document).ready(function() {
@@ -75,10 +66,11 @@ $(document).ready(function() {
     })
     // websocket
     var socket = io.connect();
-    socket.on('server_response', function(msg) {
-        updateMap(msg.mapname);
-        drawPlayerMove(msg.playerMove);
-        drawUtility(msg.utilities);
-        showMessage(msg.newMsg);
+    socket.on('server_response', function(json_Msg) {
+       if (json_Msg.qMap.length) processQMap(json_Msg.qMap);
+       if (json_Msg.qPlayerMove.length) processQPlayerMove(json_Msg.qPlayerMove);
+       if (json_Msg.qUtility.length) processQUtility(json_Msg.qUtility);
+       if (json_Msg.q2WebMsg.length) processQ2WebMsg(json_Msg.q2WebMsg);
+       checkPlayerCache();
     });
 });

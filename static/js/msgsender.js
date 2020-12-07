@@ -1,7 +1,6 @@
 
 $(document).ready(function() {
     $("#msg_btn").click(function() {
-        console.log($("#msg_input").val());
         $.ajax({
             async: false, url: "/ajax-api/webmsg", type: "post",
             dataType: "json",

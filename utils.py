@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 import os
 import json
+import queue
 
 class Converter_Real2Img():
     def __init__(self, map_name: str):
@@ -21,3 +22,45 @@ class Converter_Real2Img():
             return imgX, imgY
         except:
             raise Exception('convert FAILED!')
+
+class MessageQueue():
+    def __init__(self, qMapSz=1, qPlayerMoveSz=100, qUtilitySz=10, q2ServerMsgSz=10, q2WebMsgSz=5):
+        '''
+        qMap: [mapname]
+        qPlayerMove: [posX, posY, name, steam3id, clientid]
+        qUtility: [utid, uttype, posX, posY]
+        q2WebMsg: [ip/name, msg]
+        q2ServerMsg: [ip, msg]
+        '''
+        self.qMsg = {
+            "qMap": queue.Queue(maxsize=qMapSz),
+            "qPlayerMove": queue.Queue(maxsize=qPlayerMoveSz),
+            "qUtility": queue.Queue(maxsize=qUtilitySz),
+            "q2WebMsg": queue.Queue(maxsize=q2WebMsgSz),
+            "q2ServerMsg": queue.Queue(maxsize=q2ServerMsgSz),
+        }
+    
+    def qPut(self, qName: str, value: list=[]):
+        try:
+            if self.qMsg[qName].full(): self.qMsg[qName].get_nowait()
+            self.qMsg[qName].put_nowait(value)
+        except:
+            raise Exception("Queue({}) Put Error!".format(qName))
+    
+    def qGetAllMsg_noWait(self, qExcept=[]):
+        allMsg = {}
+        for key, value in self.qMsg.items():
+            if key in qExcept: continue
+            allMsg[key] = [] if value.empty() else value.get_nowait()
+        return allMsg
+
+    def qGet_noWait(self, qName: str):
+        try:
+            # success, Msg
+            return (False, []) if self.qMsg[qName].empty() else (True, self.qMsg[qName].get_nowait())
+        except:
+            raise Exception("Queue({}) Get Error!".format(qName))
+
+    def qClearAll(self):
+        for key in self.qMsg.keys():
+            self.qMsg[key] = queue.Queue()
