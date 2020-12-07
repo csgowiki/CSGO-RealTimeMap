@@ -17,7 +17,7 @@ public OnPluginStart() {
     HookEvent("flashbang_detonate", Event_FlashbangDetonate);
     HookEvent("smokegrenade_detonate", Event_SmokeDetonate);
     HookEvent("inferno_startburn", Event_MolotovDetonate);
-    HookEvent("decoy_detonate", Event_DecoyDetonate);
+    HookEvent("decoy_started", Event_DecoyDetonate);
     
     HookEvent("player_say", Event_PlayerSay);
     CreateTimer(0.1, InfoSender, _, TIMER_REPEAT);
