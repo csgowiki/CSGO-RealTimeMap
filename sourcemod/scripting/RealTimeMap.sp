@@ -143,7 +143,7 @@ public Action:InfoSender(Handle timer) {
                 StrCat(playerYs, sizeof(playerYs), CHARSPLIT);
                 StrCat(steam3ids, sizeof(steam3ids), CHARSPLIT);
                 StrCat(names, sizeof(names), NAMESPLIT);
-                StrCat(ids, sizeof(ids), NAMESPLIT);
+                StrCat(ids, sizeof(ids), CHARSPLIT);
             }
             StrCat(playerXs, sizeof(playerXs), playerX);
             StrCat(playerYs, sizeof(playerYs), playerY);
