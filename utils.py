@@ -27,14 +27,14 @@ class MessageQueue():
     def __init__(self, qMapSz=1, qPlayerMoveSz=100, qUtilitySz=10, q2ServerMsgSz=10, q2WebMsgSz=5):
         '''
         qMap: [mapname]
-        qPlayerMove: [posX, posY, name, steam3id, clientid]
+        qPlayersMove: [[posX, posY, name, steam3id, clientid]]
         qUtility: [utid, uttype, posX, posY]
         q2WebMsg: [ip/name, msg]
         q2ServerMsg: [ip, msg]
         '''
         self.qMsg = {
             "qMap": queue.Queue(maxsize=qMapSz),
-            "qPlayerMove": queue.Queue(maxsize=qPlayerMoveSz),
+            "qPlayersMove": queue.Queue(maxsize=qPlayerMoveSz),
             "qUtility": queue.Queue(maxsize=qUtilitySz),
             "q2WebMsg": queue.Queue(maxsize=q2WebMsgSz),
             "q2ServerMsg": queue.Queue(maxsize=q2ServerMsgSz),

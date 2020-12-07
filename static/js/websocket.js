@@ -1,4 +1,4 @@
-_INTERVAL = 500; // ms
+_INTERVAL = 100; // ms
 _UTCONFIG = {};
 _MAXPLAYER = 10;
 _PlayerCache = {};
@@ -35,6 +35,12 @@ function processQPlayerMove(msg_qPlayerMove) {
    _PlayerCache[msg_qPlayerMove[4]] = new Date().getTime()
 }
 
+function processQPlayersMove(msg_qPlayersMove) {
+   for (var idx = 0; idx < msg_qPlayersMove.length; idx++) {
+      processQPlayerMove(msg_qPlayersMove[idx]);
+   }
+}
+
 function processQUtility(msg_qUtility) {
    if ($(`#utpos${msg_qUtility[0]}`).length == 0) {
       $("#canvas").append($(
@@ -69,7 +75,7 @@ $(document).ready(function() {
     var socket = io.connect();
     socket.on('server_response', function(json_Msg) {
        if (json_Msg.qMap.length) processQMap(json_Msg.qMap);
-       if (json_Msg.qPlayerMove.length) processQPlayerMove(json_Msg.qPlayerMove);
+       if (json_Msg.qPlayersMove.length) processQPlayersMove(json_Msg.qPlayersMove);
        if (json_Msg.qUtility.length) processQUtility(json_Msg.qUtility);
        if (json_Msg.q2WebMsg.length) processQ2WebMsg(json_Msg.q2WebMsg);
        checkPlayerCache();

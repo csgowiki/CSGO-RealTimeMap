@@ -12,7 +12,7 @@ __CHARSPLIT = '|'
 __NAMESPLIT = '!@!'
 DEFAULT_MAP = 'de_inferno'
 SUPPORT_MAPS = ["de_inferno", "de_cache", "de_dust2", "de_mirage", "de_nuke", "de_overpass", "de_train", "de_vertigo"]
-__INTERVAL = 0.05 # s
+__INTERVAL = 0.1 # s
 __MAXPLAYER = 10
 __UTCONFIG = {
     'flashbang': [1000, '50px'], # timelast(ms), diameter
@@ -97,11 +97,12 @@ def serverPlayerView():
             # check valid
             if len(playerXs) != len(names):
                 return {"status": "error", "message": "player's name INVALID"}
-
+            newPlayersMove = []
             playerCount = len(playerXs)
             for player in range(playerCount):
                 px, py = mp_converter.convert(float(playerXs[player]), float(playerYs[player]))
-                messageQueue.qPut("qPlayerMove", [px, py, steam3ids[player], names[player], ids[player]])
+                newPlayersMove.append([px, py, names[player], steam3ids[player], ids[player]])
+            messageQueue.qPut("qPlayersMove", newPlayersMove)
             return {"status": "Ok"}
         except:
             return {"status": "Error"}
