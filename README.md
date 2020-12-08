@@ -26,7 +26,7 @@
 
 - [ ] 精致的界面:(
 
-# 安装&更新 (测试)
+# 安装-更新-卸载 (测试)
 
 ## 安装
 
@@ -102,4 +102,16 @@ python3 server.py  # 重启网站服务器
 按住Ctrl+AD 挂起会话
 ```
 
-如果安装或更新出现了问题请及时联系我：发issue或进QQ群762993431反馈
+## 卸载
+
+```shell
+cd <CSGO目录>/addons/sourcemod/  # 进入sourcemod文件夹
+
+screen -S rtm -X quit  # 关闭rtm会话
+
+mv ./plugins/RealTimeMap.smx ./plugins/disabled/  # 禁用smx插件
+
+rm -rf ./CSGO-RealTimeMap/  # 删除项目文件夹
+```
+
+**如果出现了问题请及时联系我：发issue或进QQ群762993431反馈**
