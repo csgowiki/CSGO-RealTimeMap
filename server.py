@@ -30,7 +30,7 @@ _thread = None
 lock = Lock()
 
 mp_converter = Converter_Real2Img(DEFAULT_MAP)
-messageQueue = MessageQueue()
+messageQueue = MessageQueue(qPlayerMoveSz=3)
 
 @app.route('/')
 def indexView():
