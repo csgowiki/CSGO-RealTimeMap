@@ -22,7 +22,7 @@ function checkCache() {
    }
    for (var eachUtTrace in _Cache["utTrace"]) {
       var now = new Date().getTime();
-      if (now - _Cache["utTrace"][eachUtTrace] >= _INTERVAL) {
+      if (now - _Cache["utTrace"][eachUtTrace] >= _INTERVAL * 2) {
          $(`#utTrace${eachUtTrace}`).remove();
          delete _Cache["utTrace"][eachUtTrace];
       }
