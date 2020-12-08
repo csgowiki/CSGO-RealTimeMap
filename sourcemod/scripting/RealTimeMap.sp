@@ -1,9 +1,25 @@
 #include <sourcemod>
+#include <sdktools>
+#include <sdkhooks>
+#include <cstrike>
 #include <system2>
 #include <json>
 
 #define CHARSPLIT "|"
 #define NAMESPLIT "!@!"
+#define MAXUTILITY 10
+
+enum UtilityType {
+    u_Smoke = 0,
+    u_Flash = 1,
+    u_Hegrenade = 2,
+    u_Molotov = 3,
+    u_Incgrenade = 4,
+    u_Decoy = 5
+}
+
+int g_FlyingUtIds[MAXUTILITY + 1];
+UtilityType g_UtType[MAXUTILITY + 1];
 
 public Plugin:myinfo = {
     name = "Realtime map info sender",
@@ -17,7 +33,7 @@ public OnPluginStart() {
     HookEvent("flashbang_detonate", Event_FlashbangDetonate);
     HookEvent("smokegrenade_detonate", Event_SmokeDetonate);
     HookEvent("inferno_startburn", Event_MolotovDetonate);
-    HookEvent("decoy_started", Event_DecoyDetonate);
+    HookEvent("decoy_started", Event_DecoyStarted);
     
     HookEvent("player_say", Event_PlayerSay);
     CreateTimer(0.2, InfoSender, _, TIMER_REPEAT);
@@ -25,11 +41,76 @@ public OnPluginStart() {
 }
 
 public OnMapStart() {
+    for (int idx = 0; idx <= MAXUTILITY; idx++) {
+        g_FlyingUtIds[idx] = -1;
+    }
     MapInfoSender();
 }
 
 public OnClientConnected(client) {
     MapInfoSender();
+}
+
+void removeFlyingUtId(entity) {
+    bool success = false;
+    for (int idx = 0; idx <= MAXUTILITY; idx++) {
+        if (g_FlyingUtIds[idx] == entity) {
+            g_FlyingUtIds[idx] = -1;
+            success = true;
+        }
+    }
+    if (!success) {
+        for (int idx = 0; idx <= MAXUTILITY; idx++) {
+            g_FlyingUtIds[idx] = -1;
+        }
+    }
+}
+
+public SpawnPost_Grenade(entity) {
+    SDKUnhook(entity, SDKHook_SpawnPost, SpawnPost_Grenade);
+    new client = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
+    if (client != -1 && GetClientTeam(client) == CS_TEAM_CT) {
+        for (int idx = 0; idx <= MAXUTILITY; idx++) {
+            if (g_FlyingUtIds[idx] == entity) {
+                g_UtType[idx] = u_Incgrenade;
+            }
+        }
+    }
+} 
+
+void setFlyingUtId(entity, UtilityType utType) {
+    bool success = false;
+    for (int idx = 0; idx <= MAXUTILITY; idx++) {
+        if (g_FlyingUtIds[idx] == -1) {
+            success = true;
+            g_FlyingUtIds[idx] = entity;
+            g_UtType[idx] = utType;
+            break;
+        }
+    }
+    if (!success) {
+        g_FlyingUtIds[0] = entity;
+        g_UtType[0] = utType;
+    }
+}
+
+public OnEntityCreated(entity, const String:classname[]) {
+    if (StrEqual(classname, "smokegrenade_projectile", false)) {
+        setFlyingUtId(entity, u_Smoke);
+    }
+    else if (StrEqual(classname, "flashbang_projectile", false)) {
+        setFlyingUtId(entity, u_Flash);
+    }
+    else if (StrEqual(classname, "hegrenade_projectile", false)) {
+        setFlyingUtId(entity, u_Hegrenade);
+    }
+    else if (StrEqual(classname, "molotov_projectile", false)) {
+        setFlyingUtId(entity, u_Molotov);
+        SDKHook(entity, SDKHook_SpawnPost, SpawnPost_Grenade)
+    }
+    else if (StrEqual(classname, "decoy_projectile", false)) {
+        setFlyingUtId(entity, u_Decoy);
+    }
 }
 
 public Action:Event_HegrenadeDetonate(Handle:event, const String:name[], bool:dontBroadcast) {
@@ -38,6 +119,7 @@ public Action:Event_HegrenadeDetonate(Handle:event, const String:name[], bool:do
     float realY = GetEventFloat(event, "y");
     char uttype[16] = "hegrenade";
     UtilitySender(utid, realX, realY, uttype);
+    removeFlyingUtId(utid);
 }
 
 public Action:Event_FlashbangDetonate(Handle:event, const String:name[], bool:dontBroadcast) {
@@ -46,6 +128,7 @@ public Action:Event_FlashbangDetonate(Handle:event, const String:name[], bool:do
     float realY = GetEventFloat(event, "y");
     char uttype[16] = "flashbang";
     UtilitySender(utid, realX, realY, uttype);
+    removeFlyingUtId(utid);
 }
 
 public Action:Event_SmokeDetonate(Handle:event, const String:name[], bool:dontBroadcast) {
@@ -54,6 +137,7 @@ public Action:Event_SmokeDetonate(Handle:event, const String:name[], bool:dontBr
     float realY = GetEventFloat(event, "y");
     char uttype[16] = "smokegrenade";
     UtilitySender(utid, realX, realY, uttype);
+    removeFlyingUtId(utid);
 }
 
 public Action:Event_MolotovDetonate(Handle:event, const String:name[], bool:dontBroadcast) {
@@ -62,14 +146,16 @@ public Action:Event_MolotovDetonate(Handle:event, const String:name[], bool:dont
     float realY = GetEventFloat(event, "y");
     char uttype[16] = "molotov";
     UtilitySender(utid, realX, realY, uttype);
+    removeFlyingUtId(utid);
 }
 
-public Action:Event_DecoyDetonate(Handle:event, const String:name[], bool:dontBroadcast) {
+public Action:Event_DecoyStarted(Handle:event, const String:name[], bool:dontBroadcast) {
     int utid = GetEventInt(event, "entityid");
     float realX = GetEventFloat(event, "x");
     float realY = GetEventFloat(event, "y");
     char uttype[16] = "decoy";
     UtilitySender(utid, realX, realY, uttype);
+    removeFlyingUtId(utid);
 }
 
 public Action:Event_PlayerSay(Handle:event, const String:name[], bool:dontBroadcast) {
@@ -118,7 +204,7 @@ public Action:MsgGeter(Handle timer) {
     msgSender(false, "", "");
 }
 
-public Action:InfoSender(Handle timer) {
+void PlayerMoveInfoSender() {
     char playerXs[96];
     char playerYs[96];
     char steam3ids[150];
@@ -163,6 +249,58 @@ public Action:InfoSender(Handle timer) {
     httpRequest.POST();
 }
 
+void UtTraceInfoSender() {
+    char utIds[55];
+    char utTypes[130];
+    char utXs[96];
+    char utYs[96];
+    int utCount = 0;
+    for (int ut = 0; ut <= MAXUTILITY; ut++) {
+        if (g_FlyingUtIds[ut] != -1) {
+            char utType[16];
+            float utXYZ[3];
+            char utX[8];
+            char utY[8];
+            char utId[5];
+            GetEntPropVector(g_FlyingUtIds[ut], Prop_Send, "m_vecOrigin", utXYZ);
+            if (g_UtType[ut] == u_Smoke) StrCat(utType, sizeof(utType), "smokegrenade");
+            if (g_UtType[ut] == u_Flash) StrCat(utType, sizeof(utType), "flashbang");
+            if (g_UtType[ut] == u_Hegrenade) StrCat(utType, sizeof(utType), "hegrenade");
+            if (g_UtType[ut] == u_Molotov) StrCat(utType, sizeof(utType), "molotov");
+            if (g_UtType[ut] == u_Incgrenade) StrCat(utType, sizeof(utType), "incgrenade");
+            if (g_UtType[ut] == u_Decoy) StrCat(utType, sizeof(utType), "decoy");
+            FloatToString(utXYZ[0], utX, sizeof(utX));
+            FloatToString(utXYZ[1], utY, sizeof(utY));
+            IntToString(g_FlyingUtIds[ut], utId, sizeof(utId));
+            if (utCount != 0) {
+                StrCat(utTypes, sizeof(utTypes), CHARSPLIT);
+                StrCat(utXs, sizeof(utXs), CHARSPLIT);
+                StrCat(utYs, sizeof(utYs), CHARSPLIT);
+                StrCat(utIds, sizeof(utIds), CHARSPLIT);
+            }
+            StrCat(utTypes, sizeof(utTypes), utType);
+            StrCat(utXs, sizeof(utXs), utX);
+            StrCat(utYs, sizeof(utYs), utY);
+            StrCat(utIds, sizeof(utIds), utId);
+            utCount ++;
+        }
+    }
+
+    if (strlen(utTypes) == 0) return;
+    System2HTTPRequest httpRequest = new System2HTTPRequest(
+        utTraceCallBack,
+        "http://127.0.0.1:5000/server-api/utility_trace"
+    );
+    httpRequest.SetData("utTypes=%s&utXs=%s&utYs=%s&utIds",
+        utTypes, utXs, utYs, utIds)
+    httpRequest.POST();
+}
+
+public Action:InfoSender(Handle timer) {
+    PlayerMoveInfoSender();
+    UtTraceInfoSender();
+}
+
 public utSenderCallBack(bool success, const char[] error, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method) {
 }
 
@@ -170,6 +308,9 @@ public senderCallBack(bool success, const char[] error, System2HTTPRequest reque
 }
 
 public mapSenderCallBack(bool success, const char[] error, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method) {
+}
+
+public utTraceCallBack(bool success, const char[] error, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method) {
 }
 
 public msgSenderCallBack(bool success, const char[] error, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method) {

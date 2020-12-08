@@ -125,6 +125,30 @@ def serverUtilityView():
         return {"status": "Ok"}
     return {"status": "None", "message": "POST only"}
 
+@app.route('/server-api/utility_trace', methods=['POST', 'GET'])
+def serverUtTraceView():
+    if request.method == 'POST':
+        '''
+        utIds: xx|xx
+        utTypes: xx|xx
+        utXs: xx|xx
+        utYs: xx|xx
+        '''
+        global messageQueue
+        utTypes = request.form.get("utTypes", []).split(__CHARSPLIT)
+        utXs = request.form.get("utXs", []).split(__CHARSPLIT)
+        utYs = request.form.get("utYs", []).split(__CHARSPLIT)
+        utIds = request.form.get("utIds", []).split(__CHARSPLIT)
+        if len(utTypes) == 0 or len(utXs) == 0 or len(utYs) == 0: 
+            return {"status": "Error"}
+        newUtTrace = []
+        for ut in range(len(utTypes)):
+            posX, posY = mp_converter.convert(float(utXs[ut]), float(utYs[ut]))
+            newUtTrace.append([utIds[ut], utTypes[ut], posX, posY])
+        messageQueue.qPut("qUtTrace", newUtTrace)
+        return {"status": "Ok"}
+    return {"status": "None", "message": "POST only"}
+
 @app.route('/server-api/msg', methods=['POST', 'GET'])
 def msgView():
     if request.method == 'POST':
