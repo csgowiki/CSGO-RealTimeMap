@@ -20,6 +20,8 @@
   
 - [ ] 道具轨迹显示
 
+- [ ] 丰富的配置选项
+
 - [ ] 玩家在线时间显示
 
 - [ ] 精致的界面:(
@@ -69,7 +71,7 @@
    
    python3 server.py  # 启动网站服务器
    
-   # 按住Ctrl+AD 挂起会话
+   按住Ctrl+AD 挂起会话
    ```
 
 5. 开启`5000` tcp端口，前往服务商管理面板开启tcp的`5000`端口
@@ -89,13 +91,15 @@ cd <CSGO目录>/addons/sourcemod/CSGO-RealTimeMap/   # 进入项目文件夹
 
 git pull # 拉取最新更新
 
+cp -r ./sourcemod/* ../    # 更新smx插件与system2依赖
+
 screen -R rtm # 进入rtm会话
 
-# 按住Ctrl+C 退出python3程序
+按住Ctrl+C 退出python3程序
 
 python3 server.py  # 重启网站服务器
 
-# 按住Ctrl+AD 挂起会话
+按住Ctrl+AD 挂起会话
 ```
 
 如果安装或更新出现了问题请及时联系我：发issue或进QQ群762993431反馈
