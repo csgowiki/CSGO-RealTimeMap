@@ -23,7 +23,7 @@ function processQPlayerMove(msg_qPlayerMove) {
       $("#canvas").append($(
          `<svg id='playerMove${msg_qPlayerMove[4]}' style='position:absolute;top:${msg_qPlayerMove[1]};left:${msg_qPlayerMove[0]};width:100px;height:20px;' xmlns='http://www.w3.org/2000/svg' version='1.1'> \
             <circle cx='15' cy='5' r='5' stroke='black' fill='red' /> \
-            <a id='playerXlink${msg_qPlayerMove[4]}' href='${msg_qPlayerMove[3]}'><text id='playername${msg_qPlayerMove[4]}' x='0' y='20' fill='yellow'>${msg_qPlayerMove[2]}</text></a> \
+            <a id='playerXlink${msg_qPlayerMove[4]}' href='https://steamcommunity.com/profiles/${msg_qPlayerMove[3]}'><text id='playername${msg_qPlayerMove[4]}' x='0' y='20' fill='yellow'>${msg_qPlayerMove[2]}</text></a> \
          </svg>`
       ))
    }
