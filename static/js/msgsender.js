@@ -1,6 +1,9 @@
 
 $(document).ready(function() {
     $("#msg_btn").click(function() {
+        if ($("#msg_input").val().length == 0) {
+            $.toaster("聊天内容不能为空");
+        }
         $.ajax({
             async: false, url: "/ajax-api/webmsg", type: "post",
             dataType: "json",

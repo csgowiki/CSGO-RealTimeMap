@@ -59,7 +59,7 @@ def ajaxWebMsgView():
     if request.method == "POST":
         global messageQueue
         msg = request.form.get("msg", None)
-        if msg is not None:
+        if msg is not None and len(msg.strip()):
             messageQueue.qPut("q2WebMsg", [request.remote_addr, msg])
             messageQueue.qPut("q2ServerMsg", [request.remote_addr, msg])
         return {"status": "Ok"}
